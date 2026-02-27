@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Study Analyzer</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg,#5f9cff,#4fd1c5);
+            margin:0;
+            padding:0;
+        }
+
+        .container {
+            width: 850px;
+            margin: 50px auto;
+            padding: 35px;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+
+        h1 {
+            text-align:center;
+            margin-bottom:10px;
+        }
+
+        .subtitle {
+            text-align:center;
+            color:#555;
+            margin-bottom:25px;
+        }
+
+        .grid {
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:14px;
+        }
+
+        .field {
+            display:flex;
+            flex-direction:column;
+            font-size:14px;
+        }
+
+        input {
+            margin-top:4px;
+            padding:11px;
+            border-radius:14px;
+            border:1px solid #ddd;
+            outline:none;
+            transition:0.2s;
+        }
+
+        input:focus {
+            border:1px solid #5f9cff;
+            box-shadow:0 0 0 3px rgba(95,156,255,0.2);
+        }
+
+        button {
+            margin-top:28px;
+            width:100%;
+            padding:16px;
+            border:none;
+            border-radius:18px;
+            background:linear-gradient(90deg,#5f9cff,#4fd1c5);
+            color:white;
+            font-size:17px;
+            font-weight:600;
+            cursor:pointer;
+            transition:0.25s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow:0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .result {
+            margin-top:35px;
+            padding:22px;
+            border-radius:20px;
+            background:white;
+            box-shadow:0 10px 30px rgba(0,0,0,0.15);
+            border-left:7px solid #5f9cff;
+        }
+
+        .footer {
+            text-align:center;
+            margin-top:25px;
+            font-size:12px;
+            color:#666;
+        }
+    </style>
+    <link rel="icon" href="{{ url_for('static', filename='10553533.png') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>AI Phân Tích Học Tập</h1>
+    <div class="subtitle">Nhập điểm để AI phân tích năng lực học tập</div>
+
+    <form method="POST">
+
+        <div class="grid">
+            <div class="field">Toán <input name="toan" value="{{ request.form.get('toan','') }}"></div>
+            <div class="field">Ngữ văn <input name="van" value="{{ request.form.get('van','') }}"></div>
+            <div class="field">Tiếng Anh <input name="anh" value="{{ request.form.get('anh','') }}"></div>
+            <div class="field">Vật lí <input name="ly" value="{{ request.form.get('ly','') }}"></div>
+            <div class="field">Hóa học <input name="hoa" value="{{ request.form.get('hoa','') }}"></div>
+            <div class="field">Sinh học <input name="sinh" value="{{ request.form.get('sinh','') }}"></div>
+            <div class="field">Lịch sử <input name="su" value="{{ request.form.get('su','') }}"></div>
+            <div class="field">Địa lí <input name="dia" value="{{ request.form.get('dia','') }}"></div>
+            <div class="field">GD Kinh tế & PL <input name="gdkt" value="{{ request.form.get('gdkt','') }}"></div>
+            <div class="field">Tin học <input name="tin" value="{{ request.form.get('tin','') }}"></div>
+            <div class="field">Công nghệ <input name="congnghe" value="{{ request.form.get('congnghe','') }}"></div>
+            <div class="field">Âm nhạc <input name="nhac" value="{{ request.form.get('nhac','') }}"></div>
+            <div class="field">Mĩ thuật <input name="mythuat" value="{{ request.form.get('mythuat','') }}"></div>
+        </div>
+
+        <button type="submit">Phân tích bằng AI</button>
+    </form>
+
+    {% if result %}
+    <div class="result">
+        <h3>Báo cáo AI</h3>
+        <p>{{ result|safe }}</p>
+    </div>
+    {% endif %}
+
+    {% if scores %}
+    <canvas id="chart" style="margin-top:35px;"></canvas>
+
+    <script>
+    const labels = {{ scores.keys()|list|tojson }};
+    const values = {{ scores.values()|list|tojson }};
+
+    const colors = values.map(v => v < 5 ? "#ff4d4f" : "#5f9cff");
+
+    new Chart(document.getElementById('chart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Điểm các môn",
+                data: values,
+                backgroundColor: colors,
+                borderRadius: 12
+            }]
+        },
+        options: {
+            plugins: { legend: { display:false }},
+            scales: {
+                y: { beginAtZero:true, max:10 }
+            }
+        }
+    });
+    </script>
+    {% endif %}
+
+    <div class="footer">
+        AI Study Analyzer • Dự án học sinh THPT
+    </div>
+
+</div>
+
+    <div id="loading-screen" style="
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(255,255,255,0.9);
+    backdrop-filter: blur(6px);
+    z-index:999;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    font-family:Poppins;
+    ">
+
+        <div style="
+            width:70px;
+            height:70px;
+            border:6px solid #e0e7ff;
+            border-top:6px solid #5f9cff;
+            border-radius:50%;
+            animation:spin 1s linear infinite;
+            margin-bottom:25px;
+        "></div>
+
+        <div id="loading-text" style="
+            font-size:28px;
+            font-weight:700;
+            text-align:center;
+            max-width:520px;
+            line-height:1.6;
+            padding:0 20px;
+
+            background: linear-gradient(90deg,#5f9cff,#4fd1c5);
+            -webkit-background-clip:text;
+            -webkit-text-fill-color:transparent;
+
+            animation: fadeIn 0.8s ease;
+        ">
+        ">
+        </div>
+
+    </div>
+
+    <style>
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+
+    }
+    @keyframes fadeIn {
+    from { opacity:0; transform: translateY(10px); }
+    to { opacity:1; transform: translateY(0); }
+}
+    </style>
+
+    <script>
+    const quotes = [
+    "AI đang phân tích năng lực của bạn...",
+    "Thiên tài cũng bắt đầu từ việc học đều mỗi ngày.",
+    "Mỗi lần nhập điểm là một lần tiến bộ.",
+    "Không ai giỏi ngay từ đầu, chỉ có người không bỏ cuộc.",
+    "AI đang tìm ra điểm mạnh của bạn...",
+    "Thành công là tích lũy của những ngày học nhỏ.",
+    "Đừng để những kiến thức hiện có khiến chúng ta ngừng học hỏi. Thế giới vô cùng rộng lớn và học tập chưa bao giờ là đủ.",
+    "Đừng để những kiến thức hiện có khiến chúng ta ngừng học hỏi. Thế giới vô cùng rộng lớn và học tập chưa bao giờ là đủ.",
+    "Học tập không phải là dồn ép tất cả mọi thứ và đầu. Biết cách học vừa đủ, đó mới là người thông minh.",
+    "Nếu hỏi một câu ngốc nghếch thì nó chỉ kéo dài vài phút. Còn không đặt câu hỏi, sự ngu ngốc sẽ kéo dài cả đời.",
+    "Nếu hỏi một câu ngốc nghếch thì nó chỉ kéo dài vài phút. Còn không đặt câu hỏi, sự ngu ngốc sẽ kéo dài cả đời.",
+    "Không biết thì không có gì xấu hổ. Chỉ nên cảm thấy xấu hổ khi không chịu học hỏi.",
+    ];
+
+    document.querySelector("form").addEventListener("submit", function(){
+        const screen = document.getElementById("loading-screen");
+        const text = document.getElementById("loading-text");
+
+        const random = quotes[Math.floor(Math.random()*quotes.length)];
+        text.innerText = random;
+
+        screen.style.display = "flex";
+    });
+    </script>
+</body>
+</html>
