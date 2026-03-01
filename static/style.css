@@ -1,86 +1,51 @@
 body{
-font-family:sans-serif;
-background:linear-gradient(120deg,#74b9ff,#81ecec);
-margin:0;
-}
-
-.container{
-width:900px;
-margin:40px auto;
-background:white;
-padding:30px;
-border-radius:20px;
-box-shadow:0 10px 30px rgba(0,0,0,0.2);
-}
-
-.subtitle{
-color:#555;
-margin-bottom:25px;
-}
-
-.grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:12px;
-}
-
-input{
-width:100%;
-padding:10px;
-border-radius:10px;
-border:1px solid #ccc;
-}
-
-button{
-margin-top:20px;
-padding:15px;
-width:100%;
-border:none;
-border-radius:12px;
-background:linear-gradient(90deg,#0984e3,#00cec9);
-color:white;
-font-weight:bold;
-cursor:pointer;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg,#4facfe,#43e97b);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
 }
 
 .card{
-margin-top:25px;
-padding:20px;
-background:#f5f7ff;
-border-left:6px solid #0984e3;
-border-radius:12px;
-
-/* ===== CHAT BOX ===== */
-
-#chat-box {
-    margin-top: 20px;
-    max-height: 350px;
-    overflow-y: auto;
-    padding-right: 10px;
+  background:white;
+  padding:30px;
+  border-radius:20px;
+  width:520px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.1);
 }
 
-.chat-message {
-    margin-top: 12px;
-    padding: 12px 15px;
-    border-radius: 12px;
-    max-width: 75%;
-    line-height: 1.5;
-    animation: fadeIn 0.3s ease-in-out;
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:20px 0;
 }
 
-.user-msg {
-    background: #dfe6ff;
-    margin-left: auto;
-    text-align: right;
+input{
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #ccc;
 }
 
-.ai-msg {
-    background: #f1f2f6;
-    margin-right: auto;
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(90deg,#4facfe,#43e97b);
+  color:white;
+  font-size:16px;
+  cursor:pointer;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+#loading{
+  margin-top:15px;
+  color:#555;
 }
+
+#result{
+  margin-top:20px;
+  white-space:pre-line;
+  line-height:1.5;
 }

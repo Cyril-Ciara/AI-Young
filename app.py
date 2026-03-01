@@ -1,7 +1,15 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 import requests
+import os
+from dotenv import load_dotenv
+from datetime import datetime
+
+load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = "supersecretkey123"
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 subjects = {
     "toan": "Toán",
@@ -19,79 +27,144 @@ subjects = {
     "mythuat": "Mĩ thuật"
 }
 
-@app.route("/", methods=["GET","POST"])
+@app.route("/", methods=["GET", "POST"])
 def home():
-    result=None
-    scores=None
+    result = None
+    scores = None
+    ai_analysis = None
+    history = session.get("history", [])
 
-    if request.method=="POST":
-        scores={}
+    if request.method == "POST":
+        scores = {}
+
         for key in subjects:
-            v=request.form.get(key)
-            if v and v.strip():
+            value = request.form.get(key)
+            if value and value.strip():
                 try:
-                    scores[subjects[key]]=float(v.replace(",","."))
+                    scores[subjects[key]] = float(value.replace(",", "."))
                 except:
                     pass
 
         if scores:
-            avg=sum(scores.values())/len(scores)
+            avg = round(sum(scores.values()) / len(scores), 2)
 
-            if avg>=8: level="Học lực GIỎI"
-            elif avg>=6.5: level="Học lực KHÁ"
-            elif avg>=5: level="Học lực TRUNG BÌNH"
-            else: level="Học lực YẾU"
-
-            weak=[s for s,v in scores.items() if v<5]
-
-            natural=["Toán","Vật lí","Hóa học","Sinh học","Tin học","Công nghệ"]
-            social=["Ngữ văn","Lịch sử","Địa lí","GD KTPL"]
-
-            nat=[scores[s] for s in scores if s in natural]
-            soc=[scores[s] for s in scores if s in social]
-
-            nat_avg=sum(nat)/len(nat) if nat else 0
-            soc_avg=sum(soc)/len(soc) if soc else 0
-
-            if nat_avg>soc_avg+1:
-                orientation="Bạn thiên về KHỐI TỰ NHIÊN"
-            elif soc_avg>nat_avg+1:
-                orientation="Bạn thiên về KHỐI XÃ HỘI"
+            if avg >= 8:
+                level = "GIỎI"
+            elif avg >= 6.5:
+                level = "KHÁ"
+            elif avg >= 5:
+                level = "TRUNG BÌNH"
             else:
-                orientation="Bạn học khá CÂN BẰNG"
+                level = "YẾU"
 
-            result=f"""
-            Điểm TB: {round(avg,2)} <br>
-            {level}<br><br>
-            {orientation}<br>
-            """
+            result = f"Điểm TB: {avg} | Học lực: {level}"
+            session["scores"] = scores
 
-            if weak:
-                result+= "Cần cải thiện: "+", ".join(weak)
+            # ===== LƯU LỊCH SỬ =====
+            now = datetime.now().strftime("%d/%m/%Y %H:%M")
+            history.append({
+                "time": now,
+                "average": avg
+            })
+            session["history"] = history
 
-    return render_template("index.html",result=result,scores=scores)
+            # ===== PHÂN LOẠI =====
+            strong = [s for s,v in scores.items() if v >= 8]
+            weak = [s for s,v in scores.items() if v < 5]
+
+            if GROQ_API_KEY:
+                headers = {
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json"
+                }
+
+                prompt = f"""
+                Môn mạnh: {strong}
+                Môn yếu: {weak}
+
+                Viết HTML theo cấu trúc:
+
+                <h3><i class="fa-solid fa-brain"></i> Phân tích tư duy tổng thể</h3>
+                <p>...</p>
+
+                <h3><i class="fa-solid fa-star"></i> Điểm mạnh nổi bật</h3>
+                <ul><li>...</li></ul>
+
+                <h3><i class="fa-solid fa-chart-line"></i> Cải thiện và phát triển</h3>
+                <p>...</p>
+
+                <h3><i class="fa-solid fa-bullseye"></i> Nghề nghiệp phù hợp</h3>
+                <p>...</p>
+
+                Không dùng emoji.
+                """
+
+                payload = {
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [
+                        {"role": "system", "content": "Bạn là chuyên gia hướng nghiệp."},
+                        {"role": "user", "content": prompt}
+                    ]
+                }
+
+                try:
+                    response = requests.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers=headers,
+                        json=payload
+                    )
+                    data = response.json()
+                    ai_analysis = data["choices"][0]["message"]["content"]
+
+                    # ===== LỌC RÁC AI TRẢ VỀ =====
+                    ai_analysis = ai_analysis.replace("```html", "")
+                    ai_analysis = ai_analysis.replace("```", "")
+                    ai_analysis = ai_analysis.replace("Dưới đây là mã HTML theo cấu trúc yêu cầu:", "")
+                    ai_analysis = ai_analysis.strip()
+                except:
+                    ai_analysis = "Lỗi AI."
+
+    return render_template(
+        "index.html",
+        result=result,
+        scores=scores,
+        ai_analysis=ai_analysis,
+        history=history
+    )
 
 
-# ===== CHAT AI =====
-@app.route("/chat",methods=["POST"])
+@app.route("/chat", methods=["POST"])
 def chat():
-    msg=request.form.get("message","")
+    user_msg = request.json.get("message")
+    scores = session.get("scores")
 
-    try:
-        r=requests.post("http://localhost:11434/api/generate",
-        json={
-            "model":"llama3",
-            "prompt":f"Bạn là trợ lý định hướng học sinh Việt Nam. Trả lời ngắn gọn bằng tiếng Việt.\nCâu hỏi: {msg}",
-            "stream":False
-        })
+    if not scores:
+        return jsonify({"reply": "Hãy nhập điểm trước nhé!"})
 
-        data=r.json()
-        reply=data.get("response","AI chưa trả lời")
-        return jsonify({"reply":reply})
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
-    except:
-        return jsonify({"reply":"⚠️ AI chưa chạy. Hãy bật ollama serve"})
+    payload = {
+        "model": "llama-3.1-8b-instant",
+        "messages": [
+            {"role": "system", "content": f"Điểm học sinh: {scores}"},
+            {"role": "user", "content": user_msg}
+        ]
+    }
+
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers=headers,
+        json=payload
+    )
+
+    data = response.json()
+    reply = data["choices"][0]["message"]["content"]
+
+    return jsonify({"reply": reply})
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     app.run(debug=True)
